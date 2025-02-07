@@ -16,14 +16,13 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "link.e4mc.fabric.E4mcClientFabric"
+      "link.e4mc.E4mcClient"
     ]
   },
   "mixins": [
     "e4mc_minecraft.mixins.json"
   ],
   "depends": {
-    "fabric": "*",
     "minecraft": ">=1.18"
   }
 }

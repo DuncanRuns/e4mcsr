@@ -111,7 +111,7 @@ public class QuiclimeSession {
                     ctx.channel().read();
                 } else {
                     QuiclimeSession.this.state = State.UNHEALTHY;
-                    if (Agnos.isClient()) {
+                    if (E4mcClient.isClient()) {
                         Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
                     }
                     toQuiclime.close();
@@ -131,7 +131,7 @@ public class QuiclimeSession {
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
             QuiclimeSession.this.state = State.UNHEALTHY;
-            if (Agnos.isClient()) {
+            if (E4mcClient.isClient()) {
                 Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
             }
             this.channelInactive(ctx);
@@ -156,7 +156,7 @@ public class QuiclimeSession {
                     ctx.channel().read();
                 } else {
                     QuiclimeSession.this.state = State.UNHEALTHY;
-                    if (Agnos.isClient()) {
+                    if (E4mcClient.isClient()) {
                         Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
                     }
                     ctx.channel().close();
@@ -172,7 +172,7 @@ public class QuiclimeSession {
                         ctx.channel().read();
                     } else {
                         QuiclimeSession.this.state = State.UNHEALTHY;
-                        if (Agnos.isClient()) {
+                        if (E4mcClient.isClient()) {
                             Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
                         }
                         ((ChannelFuture) it).channel().close();
@@ -201,7 +201,7 @@ public class QuiclimeSession {
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
             QuiclimeSession.this.state = State.UNHEALTHY;
-            if (Agnos.isClient()) {
+            if (E4mcClient.isClient()) {
                 Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
             }
             this.channelInactive(ctx);
@@ -237,10 +237,10 @@ public class QuiclimeSession {
     }
 
     private static BrokerResponse getRelay() throws Exception {
-        if (Config.INSTANCE.useBroker.value()) {
+        if (Config.INSTANCE.useBroker) {
             var httpClient = HttpClient.newHttpClient();
             var request = HttpRequest
-                    .newBuilder(new URI(Config.INSTANCE.brokerUrl.value()))
+                    .newBuilder(new URI(Config.INSTANCE.brokerUrl))
                     .header("Accept", "application/json")
                     .build();
             LOGGER.info("req: {}", request);
@@ -253,8 +253,8 @@ public class QuiclimeSession {
         } else {
             var resp = new BrokerResponse();
             resp.id = "custom";
-            resp.host = Config.INSTANCE.relayHost.value();
-            resp.port = Config.INSTANCE.relayPort.value();
+            resp.host = Config.INSTANCE.relayHost;
+            resp.port = Config.INSTANCE.relayPort;
             return resp;
         }
     }
@@ -285,7 +285,7 @@ public class QuiclimeSession {
                     .addListener(datagramChannelFuture -> {
                 if (!datagramChannelFuture.isSuccess()) {
                     QuiclimeSession.this.state = State.UNHEALTHY;
-                    if (Agnos.isClient()) {
+                    if (E4mcClient.isClient()) {
                         Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
                     }
                     throw new RuntimeException(datagramChannelFuture.cause());
@@ -305,7 +305,7 @@ public class QuiclimeSession {
                             public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
                                 super.exceptionCaught(ctx, cause);
                                 QuiclimeSession.this.state = State.UNHEALTHY;
-                                if (Agnos.isClient()) {
+                                if (E4mcClient.isClient()) {
                                     Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
                                 }
                             }
@@ -322,7 +322,7 @@ public class QuiclimeSession {
                         .addListener(quicChannelFuture -> {
                     if (!quicChannelFuture.isSuccess()) {
                         QuiclimeSession.this.state = State.UNHEALTHY;
-                        if (Agnos.isClient()) {
+                        if (E4mcClient.isClient()) {
                             Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
                         }
                         throw new RuntimeException(datagramChannelFuture.cause());
@@ -337,12 +337,12 @@ public class QuiclimeSession {
                                 protected void channelRead0(ChannelHandlerContext ctx, ControlMessageCodec.ControlMessage msg) {
                                     if (msg instanceof ControlMessageCodec.DomainAssignmentCompleteMessageClientbound) {
                                         state = State.STARTED;
-                                        if (!Agnos.isClient()) {
+                                        if (!E4mcClient.isClient()) {
                                             LOGGER.warn("e4mc running on Dedicated Server; This works, but isn't recommended as e4mc is designed for short-lived LAN servers");
                                         }
                                         String domain = ((ControlMessageCodec.DomainAssignmentCompleteMessageClientbound) msg).domain;
                                         LOGGER.info("Domain assigned: {}", domain);
-                                        if (Agnos.isClient()) {
+                                        if (E4mcClient.isClient()) {
                                             Component message = Mirror.append(Mirror.translatable(
                                                     "text.e4mc_minecraft.domainAssigned",
                                                     Mirror.withStyle(Mirror.literal(domain), it ->
@@ -362,7 +362,7 @@ public class QuiclimeSession {
                                     }
                                     if (msg instanceof ControlMessageCodec.RequestMessageBroadcastMessageClientbound) {
 
-                                        if (Agnos.isClient()) {
+                                        if (E4mcClient.isClient()) {
                                             Minecraft.getInstance().gui.getChat().addMessage(Mirror.literal(((ControlMessageCodec.RequestMessageBroadcastMessageClientbound) msg).message));
                                         }
                                     }
@@ -372,7 +372,7 @@ public class QuiclimeSession {
                     }).addListener(it -> {
                         if (!it.isSuccess()) {
                             QuiclimeSession.this.state = State.UNHEALTHY;
-                            if (Agnos.isClient()) {
+                            if (E4mcClient.isClient()) {
                                 Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
                             }
                             throw new RuntimeException(datagramChannelFuture.cause());
@@ -390,7 +390,7 @@ public class QuiclimeSession {
             });
         } catch (Throwable e) {
             QuiclimeSession.this.state = State.UNHEALTHY;
-            if (Agnos.isClient()) {
+            if (E4mcClient.isClient()) {
                 Minecraft.getInstance().gui.getChat().addMessage(Mirror.translatable("text.e4mc_minecraft.error"));
             }
             throw new RuntimeException(e);

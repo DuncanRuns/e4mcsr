@@ -1,79 +1,67 @@
 plugins {
-    id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.6-SNAPSHOT" apply false
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id 'fabric-loom' version '1.9-SNAPSHOT'
+    id 'maven-publish'
 }
 
-architectury {
-    minecraft = rootProject.minecraft_version
+version = "${project.mod_version}+MC${project.minecraft_version}"
+group = project.maven_group
+
+repositories {
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://repo.sleeping.town/' }
 }
 
-subprojects {
-    apply plugin: "dev.architectury.loom"
+configurations {
+    common
+    shadowCommon // Don't use shadow from the shadow plugin since it *excludes* files.
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
 
-    loom {
-        silentMojangMappingsLicense()
-    }
+dependencies {
+    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
 
-    dependencies {
-        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-        // The following line declares the mojmap mappings, you may use other mappings as well
-        mappings loom.officialMojangMappings()
-        // The following line declares the yarn mappings you may select this one as well.
-        // mappings "net.fabricmc:yarn:1.18.2+build.4:v2"
+    shadowCommon(implementation("com.github.vgskye.netty-incubator-codec-quic:netty-incubator-codec-classes-quic:${rootProject.quic_version}") {
+        exclude(group: "io.netty")
+    })
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+    options.release = 17
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
     }
 }
 
-allprojects {
-    apply plugin: "java"
-    apply plugin: "architectury-plugin"
-    apply plugin: "maven-publish"
 
-    base {
-        archivesName = rootProject.archives_base_name + "-" + project.name
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
     }
-
-    version = rootProject.mod_version
-    group = rootProject.maven_group
+}
+publishing {
+    publications {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archives_base_name
+            from components.java
+        }
+    }
 
     repositories {
-        // Add repositories to retrieve artifacts from in here.
-        // You should only use this when depending on other mods because
-        // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-        // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-        // for more information about repositories.
-        maven { url "https://maven.neoforged.net/releases/" }
-        maven { url 'https://jitpack.io' }
-        maven { url 'https://repo.sleeping.town/' }
-    }
-
-    tasks.withType(JavaCompile) {
-        options.encoding = "UTF-8"
-        options.release = 17
-    }
-
-    java {
-        withSourcesJar()
-    }
-}
-
-ext.getLatestChangelog = {
-    Collection<String> lines = file("$rootDir/CHANGELOG.md").readLines()
-    String changelog = ""
-    Boolean atSegment = false
-    for (String line : lines) {
-        if (line.startsWith("## ")) {
-            if (atSegment) break // hit next segment
-            atSegment = true
-        }
-        if (atSegment) changelog += "$line\n"
-    }
-    return changelog.trim()
-}
-
-tasks.register("viewLatestChangelog") {
-    group "documentation"
-    description "Print the topmost single version section from the full CHANGELOG.md file."
-    doLast {
-        println(getLatestChangelog())
     }
 }
