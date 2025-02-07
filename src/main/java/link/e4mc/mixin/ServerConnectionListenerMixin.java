@@ -10,6 +10,7 @@ import link.e4mc.QuiclimeSession;
 import net.minecraft.server.network.ServerConnectionListener;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
@@ -23,6 +24,7 @@ import java.net.InetAddress;
 public abstract class ServerConnectionListenerMixin {
     @Shadow public abstract void startTcpServerListener(InetAddress inetAddress, int i) throws IOException;
 
+    @Unique
     private static final ThreadLocal<Boolean> initializingE4mc = ThreadLocal.withInitial(() -> false);
 
     @Inject(method = "startTcpServerListener", at = @At("HEAD"))
