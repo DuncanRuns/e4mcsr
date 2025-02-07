@@ -1,5 +1,4 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "7.1.2"
     id 'fabric-loom' version '1.9-SNAPSHOT'
     id 'maven-publish'
 }
@@ -13,11 +12,7 @@ repositories {
 }
 
 configurations {
-    common
-    shadowCommon // Don't use shadow from the shadow plugin since it *excludes* files.
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentFabric.extendsFrom common
+    provided
 }
 
 dependencies {
@@ -25,7 +20,7 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
 
-    shadowCommon(implementation("com.github.vgskye.netty-incubator-codec-quic:netty-incubator-codec-classes-quic:${rootProject.quic_version}") {
+    provided(implementation("com.github.vgskye.netty-incubator-codec-quic:netty-incubator-codec-classes-quic:${rootProject.quic_version}") {
         exclude(group: "io.netty")
     })
 }
@@ -44,6 +39,7 @@ jar {
     from("LICENSE") {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
+    from { configurations.provided.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
 
