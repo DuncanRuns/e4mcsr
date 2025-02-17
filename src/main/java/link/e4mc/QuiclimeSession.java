@@ -75,9 +75,9 @@ public class QuiclimeSession {
             int size = in.getByte(in.readerIndex());
             if (in.readableBytes() >= size + 1) {
                 in.skipBytes(1);
-                var buf = new byte[size];
+                byte[] buf = new byte[size];
                 in.readBytes(buf);
-                var json = gson.fromJson(new String(buf, StandardCharsets.UTF_8), JsonObject.class);
+                JsonObject json = gson.fromJson(new String(buf, StandardCharsets.UTF_8), JsonObject.class);
                 switch (json.get("kind").getAsString()) {
                     case "domain_assignment_complete":
                         out.add(gson.fromJson(json, DomainAssignmentCompleteMessageClientbound.class));
@@ -144,7 +144,7 @@ public class QuiclimeSession {
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             LOGGER.info("channel active: {}", ctx.channel());
-            var fut = new Bootstrap()
+            ChannelFuture fut = new Bootstrap()
                     .group(ctx.channel().eventLoop())
                     .channel(LocalChannel.class)
                     .handler(new ToMinecraftHandler((QuicStreamChannel) ctx.channel()))
@@ -231,27 +231,27 @@ public class QuiclimeSession {
     }
 
     public void startAsync() {
-        var thread = new Thread(this::start, "e4mc_minecraft-init");
+        Thread thread = new Thread(this::start, "e4mc_minecraft-init");
         thread.setDaemon(true);
         thread.start();
     }
 
     private static BrokerResponse getRelay() throws Exception {
         if (Config.INSTANCE.useBroker) {
-            var httpClient = HttpClient.newHttpClient();
-            var request = HttpRequest
+            HttpClient httpClient = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest
                     .newBuilder(new URI(Config.INSTANCE.brokerUrl))
                     .header("Accept", "application/json")
                     .build();
             LOGGER.info("req: {}", request);
-            var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             LOGGER.info("resp: {}", response);
             if (response.statusCode() != 200) {
                 throw new RuntimeException();
             }
             return gson.fromJson(response.body(), BrokerResponse.class);
         } else {
-            var resp = new BrokerResponse();
+            BrokerResponse resp = new BrokerResponse();
             resp.id = "custom";
             resp.host = Config.INSTANCE.relayHost;
             resp.port = Config.INSTANCE.relayPort;
@@ -261,13 +261,13 @@ public class QuiclimeSession {
 
     public void start() {
         try {
-            var relayInfo = getRelay();
+            BrokerResponse relayInfo = getRelay();
             LOGGER.info("using relay {}", relayInfo.id);
             QuicSslContext context = QuicSslContextBuilder
                     .forClient()
                     .applicationProtocols("quiclime")
                     .build();
-            var codec = new QuicClientCodecBuilder()
+            ChannelHandler codec = new QuicClientCodecBuilder()
                     .sslContext(context)
                     .sslEngineProvider(it -> context.newEngine(it.alloc(), relayInfo.host, relayInfo.port))
                     .initialMaxStreamsBidirectional(512)
